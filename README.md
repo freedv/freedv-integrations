@@ -13,10 +13,10 @@ You can build the radio integrations for execution on your local machine by runn
 
 ```
 # Clone repo:
-$ git clone --recurse-submodules https://github.com/tmiw/freedv-integrations
+$ git clone --recurse-submodules https://github.com/freedv/freedv-integrations
 
 # or:
-$ git clone https://github.com/tmiw/freedv-integrations
+$ git clone https://github.com/freedv/freedv-integrations
 $ git submodule update --init --recursive
 
 # Build:
