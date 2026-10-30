@@ -8,7 +8,7 @@ endif()
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum OS X deployment version")
 
 set(PROJECT_NAME freedv-integrations)
-set(PROJECT_VERSION 2.4.0)
+set(PROJECT_VERSION 2.4.1)
 set(PROJECT_DESCRIPTION "Officially supported FreeDV radio integrations")
 set(PROJECT_HOMEPAGE_URL "https://freedv.org")
 
