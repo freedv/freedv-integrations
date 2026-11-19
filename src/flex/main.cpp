@@ -110,7 +110,8 @@ void ReportReceivedCallsign(rade_text_t, const char *txt_ptr, int length, void *
 
 void printUsage(char* appName)
 {
-    log_info("Usage: %s [-d|--disable-reporting] [-l|--reporting-locator LOCATOR] [-m|--reporting-message MESSAGE] [-r|--rx-volume DB] [-t|--spot-timeout SEC] [-h|--help] [-v|--version]", appName);
+    log_info("Usage: %s [-c|--callsign CALLSIGN] [-d|--disable-reporting] [-l|--reporting-locator LOCATOR] [-m|--reporting-message MESSAGE] [-r|--rx-volume DB] [-t|--spot-timeout SEC] [-h|--help] [-v|--version]", appName);
+    log_info("    -c|--callsign: Overrides the callsign from the radio (used for FreeDV Reporter and the transmitted RADE text).");
     log_info("    -d|--disable-reporting: Disables FreeDV Reporter reporting.");
     log_info("    -l|--reporting-locator: Overrides grid square/locator from radio for FreeDV Reporter reporting.");
     log_info("    -m|--reporting-message: Sets reporting message for FreeDV Reporter reporting.");
@@ -125,6 +126,7 @@ int main(int argc, char** argv)
 {
     std::string stationGridSquare;
     std::string stationUserMessage;
+    std::string stationCallsign; // if set, overrides the callsign configured in the radio
     bool disableReporting = false;
     float volumeAdjustmentDecibel = 0.0f;
     
@@ -143,6 +145,12 @@ int main(int argc, char** argv)
     {
         log_info("Using FreeDV Reporter grid square '%s' from environment", reportingGridSquareEnv);
         stationGridSquare = reportingGridSquareEnv;
+    }
+    auto stationCallsignEnv = getenv("STATION_CALLSIGN"); // NOLINT
+    if (stationCallsignEnv != nullptr && strlen(stationCallsignEnv) > 0)
+    {
+        log_info("Using callsign '%s' from environment (overrides radio callsign)", stationCallsignEnv);
+        stationCallsign = stationCallsignEnv;
     }
     auto volumeAdjustEnv = getenv("RX_VOLUME"); // NOLINT
     if (volumeAdjustEnv && strlen(volumeAdjustEnv) > 0)
@@ -178,6 +186,7 @@ int main(int argc, char** argv)
  
     // Check command line options
     static struct option longOptions[] = {
+        {"callsign",              required_argument, 0,  'c' },
         {"disable-reporting",     no_argument,       0,  'd' },
         {"reporting-locator",     required_argument, 0,  'l' },
         {"reporting-message",     required_argument, 0,  'm' },
@@ -187,7 +196,7 @@ int main(int argc, char** argv)
         {"version",               no_argument,       0,  'v' },
         {0,         0,                 0,  0 }
     };
-    constexpr char shortOptions[] = "dl:m:r:t:hv";
+    constexpr char shortOptions[] = "c:dl:m:r:t:hv";
     
     int optionIndex = 0;
     int c = 0;
@@ -195,6 +204,18 @@ int main(int argc, char** argv)
     {
         switch(c)
         {
+            case 'c':
+            {
+                if (optarg == nullptr || strlen(optarg) == 0)
+                {
+                    log_error("Callsign required if specifying -c/--callsign.");
+                    printUsage(argv[0]);
+                    exit(-1); // NOLINT
+                }
+                log_info("Using callsign '%s' (overrides radio callsign)", optarg);
+                stationCallsign = optarg;
+                break;
+            }
             case 'd':
             {
                 log_info("Disabling FreeDV Reporter reporting");
@@ -416,7 +437,14 @@ int main(int argc, char** argv)
         meterMeterId = meterId;
     }, nullptr);
 
-    tcpTask.setWaveformCallsignRxFn([&](FlexTcpTask&, std::string const& callsign, void*) {
+    tcpTask.setWaveformCallsignRxFn([&](FlexTcpTask&, std::string const& radioCallsign, void*) {
+        // A callsign supplied via STATION_CALLSIGN or -c/--callsign wins over the radio's value.
+        std::string const& callsign = stationCallsign.empty() ? radioCallsign : stationCallsign;
+        if (!stationCallsign.empty())
+        {
+            log_info("Radio callsign '%s' overridden by '%s'", radioCallsign.c_str(), callsign.c_str());
+        }
+
         // Add callsign to EOO so others can report us
         log_info("Setting EOO bits");
         int nsyms = rade_n_eoo_bits(radeObj);

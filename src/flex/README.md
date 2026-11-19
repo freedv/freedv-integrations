@@ -74,6 +74,7 @@ Note that some of the above options can also be provided via environment variabl
 
 | Option                | Environment Variable                                    |
 |-----------------------|---------------------------------------------------------|
+| `--callsign`          | `STATION_CALLSIGN` (overrides the radio's callsign)     |
 | `--disable-reporting` | `DISABLE_REPORTING` (`true` or `1` to disable)          |
 | `--reporting-locator` | `REPORTING_LOCATOR`                                     |
 | `--reporting-message` | `REPORTING_MESSAGE`                                     |
